@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2017 Martijn Rijkeboer <mrr@sru-systems.com>
+// Copyright (c) 2016-2017,2025 Martijn Rijkeboer <mrr@sru-systems.com>
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
@@ -6,7 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use crate::rust_crypto::symmetriccipher::SymmetricCipherError;
+use cbc::cipher::block_padding::UnpadError;
 use std::error;
 use std::fmt;
 use std::io;
@@ -17,7 +17,7 @@ use xml::writer as xmlwriter;
 #[derive(Debug)]
 pub enum Error {
     /// Error during the encryption or decryption of the database.
-    CryptoError(SymmetricCipherError),
+    CryptoError(UnpadError),
 
     /// The hash of a data block is invalid.
     InvalidBlockHash,
@@ -83,16 +83,7 @@ pub enum Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Error::CryptoError(err) => match err {
-                SymmetricCipherError::InvalidLength => {
-                    write!(f, "Crypto error: invalid length.")
-                }
-
-                SymmetricCipherError::InvalidPadding => {
-                    write!(f, "Crypto error: invalid padding.")
-                }
-            },
-
+            Error::CryptoError(_) => write!(f, "Crypto error: invalid padding."),
             Error::InvalidBlockHash => write!(f, "Invalid block hash"),
             Error::InvalidBlockId(val) => write!(f, "Invalid block id: {}", val),
             Error::InvalidDbSignature(val) => write!(f, "Invalid database signature: {:?}", val),
@@ -151,8 +142,8 @@ impl From<xmlwriter::Error> for Error {
     }
 }
 
-impl From<SymmetricCipherError> for Error {
-    fn from(err: SymmetricCipherError) -> Error {
+impl From<UnpadError> for Error {
+    fn from(err: UnpadError) -> Error {
         Error::CryptoError(err)
     }
 }

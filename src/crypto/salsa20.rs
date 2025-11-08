@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2017 Martijn Rijkeboer <mrr@sru-systems.com>
+// Copyright (c) 2016-2017,2025 Martijn Rijkeboer <mrr@sru-systems.com>
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
@@ -6,12 +6,12 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use crate::rust_crypto::symmetriccipher::SynchronousStreamCipher;
 use crate::types::StreamKey;
+use salsa20::cipher::{KeyIvInit, StreamCipher};
 
 const SALSA20_NOUNCE: [u8; 8] = [0xe8, 0x30, 0x09, 0x4b, 0x97, 0x20, 0x5d, 0x2a];
 
-pub use crate::rust_crypto::salsa20::Salsa20;
+pub use salsa20::Salsa20;
 
 /// Decrypt the input using the Salsa20 stream cipher.
 pub fn decrypt(cipher: &mut Salsa20, input: &Vec<u8>) -> Vec<u8> {
@@ -25,13 +25,13 @@ pub fn encrypt(cipher: &mut Salsa20, input: &Vec<u8>) -> Vec<u8> {
 
 /// Create a new Salsa20 stream cipher using the specified key.
 pub fn new_cipher(key: &StreamKey) -> Salsa20 {
-    Salsa20::new(&key.unpack(), &SALSA20_NOUNCE)
+    Salsa20::new(&key.unpack().into(), &SALSA20_NOUNCE.into())
 }
 
 fn process(cipher: &mut Salsa20, input: &Vec<u8>) -> Vec<u8> {
-    let mut output = vec![0; input.len()];
-    cipher.process(input, &mut output);
-    output
+    let mut buffer = input.clone();
+    cipher.apply_keystream(&mut buffer);
+    buffer
 }
 
 #[cfg(test)]

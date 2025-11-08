@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2017 Martijn Rijkeboer <mrr@sru-systems.com>
+// Copyright (c) 2016-2017,2025 Martijn Rijkeboer <mrr@sru-systems.com>
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
@@ -6,63 +6,23 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use crate::rust_crypto::aes::{self, KeySize};
-use crate::rust_crypto::blockmodes::PkcsPadding;
-use crate::rust_crypto::buffer::{
-    BufferResult, ReadBuffer, RefReadBuffer, RefWriteBuffer, WriteBuffer,
-};
 use crate::types::{MasterIV, MasterKey, Result};
+use aes::Aes256;
+use cbc::cipher::{block_padding::Pkcs7, BlockDecryptMut, BlockEncryptMut, KeyIvInit};
+
+type Aes256CbcDec = cbc::Decryptor<Aes256>;
+type Aes256CbcEnc = cbc::Encryptor<Aes256>;
 
 /// Decrypt the input using the key and initialization vector.
 pub fn decrypt(key: &MasterKey, iv: &MasterIV, input: &[u8]) -> Result<Vec<u8>> {
-    let mut cipher = aes::cbc_decryptor(KeySize::KeySize256, &key.unsecure(), &iv.0, PkcsPadding);
-    let mut output = Vec::new();
-    let mut read_buffer = RefReadBuffer::new(input);
-    let mut buffer = [0; 4096];
-    let mut write_buffer = RefWriteBuffer::new(&mut buffer);
-
-    loop {
-        let result = cipher.decrypt(&mut read_buffer, &mut write_buffer, true)?;
-        output.extend(
-            write_buffer
-                .take_read_buffer()
-                .take_remaining()
-                .iter()
-                .map(|&i| i),
-        );
-        match result {
-            BufferResult::BufferUnderflow => break,
-            BufferResult::BufferOverflow => {}
-        }
-    }
-
-    Ok(output)
+    let cipher = Aes256CbcDec::new(&key.unsecure().into(), &iv.0.into());
+    Ok(cipher.decrypt_padded_vec_mut::<Pkcs7>(input)?)
 }
 
 /// Encrypt the input using the key and initialization vector.
 pub fn encrypt(key: &MasterKey, iv: &MasterIV, input: &[u8]) -> Result<Vec<u8>> {
-    let mut cipher = aes::cbc_encryptor(KeySize::KeySize256, &key.unsecure(), &iv.0, PkcsPadding);
-    let mut output = Vec::new();
-    let mut read_buffer = RefReadBuffer::new(input);
-    let mut buffer = [0; 4096];
-    let mut write_buffer = RefWriteBuffer::new(&mut buffer);
-
-    loop {
-        let result = cipher.encrypt(&mut read_buffer, &mut write_buffer, true)?;
-        output.extend(
-            write_buffer
-                .take_read_buffer()
-                .take_remaining()
-                .iter()
-                .map(|&i| i),
-        );
-        match result {
-            BufferResult::BufferUnderflow => break,
-            BufferResult::BufferOverflow => {}
-        }
-    }
-
-    Ok(output)
+    let cipher = Aes256CbcEnc::new(&key.unsecure().into(), &iv.0.into());
+    Ok(cipher.encrypt_padded_vec_mut::<Pkcs7>(input))
 }
 
 #[cfg(test)]

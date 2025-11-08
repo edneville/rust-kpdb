@@ -6,17 +6,13 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-use crate::rust_crypto::aesni;
-
 use crate::crypto::sha256;
-use crate::rust_crypto::aes;
-use crate::rust_crypto::aessafe;
-use crate::rust_crypto::symmetriccipher::BlockEncryptor;
-use crate::rust_crypto::util;
 use crate::types::composite_key::CompositeKey;
 use crate::types::transform_rounds::TransformRounds;
 use crate::types::transform_seed::TransformSeed;
+
+use aes::Aes256;
+use cipher::{generic_array::GenericArray, BlockEncrypt, KeyInit};
 use secstr::SecStr;
 
 /// Key used for generating the master key.
@@ -33,22 +29,16 @@ impl TransformedKey {
         seed: &TransformSeed,
         rounds: &TransformRounds,
     ) -> TransformedKey {
-        let mut tmp_key = key.unsecure().clone();
-        let mut output = [0u8; 32];
-        if util::supports_aesni() {
-            let cipher = aesni::AesNiEncryptor::new(aes::KeySize::KeySize256, &seed.0);
-            for _ in 0..rounds.0 {
-                cipher.encrypt_block(&tmp_key[0..16], &mut output[0..16]);
-                cipher.encrypt_block(&tmp_key[16..32], &mut output[16..32]);
-                tmp_key = output;
-            }
-        } else {
-            let cipher = aessafe::AesSafe256Encryptor::new(&seed.0);
-            for _ in 0..rounds.0 {
-                cipher.encrypt_block(&tmp_key[0..16], &mut output[0..16]);
-                cipher.encrypt_block(&tmp_key[16..32], &mut output[16..32]);
-                tmp_key = output;
-            }
+        let mut tmp_key: [u8; 32] = key.unsecure().clone().into();
+        let cipher = Aes256::new(&seed.0.into());
+        for _ in 0..rounds.0 {
+            let mut blocks = [
+                GenericArray::clone_from_slice(&tmp_key[0..16]).clone(),
+                GenericArray::clone_from_slice(&tmp_key[16..32]).clone(),
+            ];
+            cipher.encrypt_blocks(&mut blocks);
+            tmp_key[0..16].copy_from_slice(&blocks[0]);
+            tmp_key[16..32].copy_from_slice(&blocks[1]);
         }
 
         TransformedKey::secure(sha256::hash(&[&tmp_key]))

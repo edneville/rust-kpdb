@@ -127,7 +127,6 @@
 //!
 //! - KeePass 1 databases.
 
-extern crate crypto as rust_crypto;
 extern crate xml as rust_xml;
 
 pub use crate::types::Association;

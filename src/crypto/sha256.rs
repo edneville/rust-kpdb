@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2017 Martijn Rijkeboer <mrr@sru-systems.com>
+// Copyright (c) 2016-2017,2025 Martijn Rijkeboer <mrr@sru-systems.com>
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
@@ -6,19 +6,16 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use crate::rust_crypto::digest::Digest;
-use crate::rust_crypto::sha2::Sha256;
+use sha2::{Digest, Sha256};
 
 /// Hash the input using the SHA256 hashing algorithm.
 pub fn hash(inputs: &[&[u8]]) -> [u8; 32] {
     let mut hasher = Sha256::new();
     for input in inputs {
-        hasher.input(input);
+        hasher.update(input);
     }
 
-    let mut result = [0u8; 32];
-    hasher.result(&mut result);
-    result
+    hasher.finalize().into()
 }
 
 #[cfg(test)]
