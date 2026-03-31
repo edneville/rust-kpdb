@@ -387,7 +387,7 @@ mod tests {
     fn test_new_returns_correct_instance() {
         let now = Utc::now();
         let name = "Root";
-        let group = Group::new(name.clone());
+        let group = Group::new(name);
         assert!(approx_equal_datetime(group.creation_time, now));
         assert_eq!(group.custom_icon_uuid, None);
         assert_eq!(group.def_auto_type_sequence, "");
