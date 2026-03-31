@@ -14,7 +14,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! rust-kpdb = "0.5"
+//! rust-kpdb = "0.6"
 //! ```
 //!
 //! And the following to your crate root:

@@ -5,6 +5,19 @@ This documents all notable changes to
 [rust-kpdb](https://github.com/sru-systems/rust-kpdb).
 
 
+## 0.6.0
+
+- Update base64 dependency to 0.22.
+- Update flate2 dependency to 1.1.
+- Update rand dependency to 0.8.
+- Update salsa20 dependency to 0.11.
+- Update sha2 dependency to 0.11.
+- Update uuid dependency to 1.23.
+- Update xml-rs dependency to 1.0.
+- Fix warning in group.rs.
+- Fix warning in Cargo.toml.
+
+
 ## 0.5.0
 
 - Update xml-rs dependency to 0.8.
